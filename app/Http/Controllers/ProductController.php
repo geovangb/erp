@@ -20,6 +20,8 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\PrdVariant;
 use App\Models\Stock;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class ProductController extends Controller
 {

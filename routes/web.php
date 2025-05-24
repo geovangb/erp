@@ -1,7 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,10 +21,19 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-///Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::resource('products', ProductController::class);
-//});
+});
 
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Route::get('/cart', [CartController::class, 'index'])->name('cart.view');
+Route::post('/cart/{product}/add-to-cart', [CartController::class, 'add'])->name('cart.add');
+Route::delete('/cart/{key}', [CartController::class, 'remove'])->name('cart.remove');
+Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
+Route::post('/cart/calculate-freight', [CartController::class, 'calculateFreight'])->name('cart.calculateFreight');
+Route::post('/cart/payment-method', [CartController::class, 'setPaymentMethod'])->name('cart.setPaymentMethod');
+Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+
