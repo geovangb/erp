@@ -12,36 +12,39 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\WebhookData;
+use App\Services\WebhookService;
 use Illuminate\Http\Request;
-use App\Models\Order;
+use Illuminate\Http\JsonResponse;
 
 class WebhookController extends Controller
 {
-    public function handle(Request $request)
+    protected WebhookService $service;
+
+    /**
+     * @param WebhookService $service
+     */
+    public function __construct(WebhookService $service)
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function handle(Request $request): JsonResponse
     {
         if ($request->header('X-WEBHOOK-KEY') !== env('WEBHOOK_SECRET')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $request->validate([
-            'order_id' => 'required|integer|exists:orders,id',
-            'status' => 'required|string',
-        ]);
-
-        $order = Order::find($request->order_id);
-
-        if (!$order) {
-            return response()->json(['error' => 'Pedido não encontrado'], 404);
+        try {
+            $data = WebhookData::fromRequest($request);
+            $message = $this->service->handle($data);
+            return response()->json(['message' => $message]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        if (strtolower($request->status) === 'cancelado') {
-            $order->delete();
-            return response()->json(['message' => 'Pedido cancelado e removido com sucesso.']);
-        }
-
-        $order->status = strtolower($request->status);
-        $order->save();
-
-        return response()->json(['message' => 'Status do pedido atualizado com sucesso.']);
     }
 }

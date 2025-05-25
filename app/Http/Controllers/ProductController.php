@@ -12,16 +12,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\View\Factory;
+use App\DTO\ProductData;
+use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Product;
-use App\Models\PrdVariant;
-use App\Models\Stock;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
+
 
 class ProductController extends Controller
 {
@@ -29,20 +26,29 @@ class ProductController extends Controller
     const PRODUCTS_CREATE = 'products.create';
     const PRODUCTS_EDIT = 'products.edit';
 
+    protected ProductService $productService;
+
     /**
-     * @return Application|Factory|View
+     * @param ProductService $productService
      */
-    public function index()
+    public function __construct(ProductService $productService)
+    {
+        $this->productService = $productService;
+    }
+
+    /**
+     * @return View
+     */
+    public function index(): View
     {
         $products = Product::with('variants')->paginate(10);
-
         return view(self::PRODUCTS_INDEX, compact('products'));
     }
 
     /**
-     * @return Application|Factory|View
+     * @return View
      */
-    public function create()
+    public function create(): View
     {
         return view(self::PRODUCTS_CREATE);
     }
@@ -53,110 +59,43 @@ class ProductController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-
-        $validated = $request->validate([
-            'sku' => 'required',
-            'name' => 'required',
-            'description' => 'nullable',
-            'price_of' => 'required|numeric',
-            'price_for' => 'required|numeric',
-            'status' => 'required|boolean',
-            'image' => 'nullable|image',
-        ]);
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('products', 'public');
-        }
-
-        $product = Product::create($validated);
-
-        if ($request->has('variants')) {
-            foreach ($request->variants as $variant) {
-                $v = new PrdVariant($variant);
-                $v->id_product = $product->id;
-                $v->save();
-
-                if (isset($variant['stock_min']) || isset($variant['stock_current'])) {
-                    $product->stock()->create([
-                        'variant_id' => $v->id,
-                        'qtd_min' => $variant['stock_min'] ?? 0,
-                        'qtd_atual' => $variant['stock_current'] ?? 0,
-                    ]);
-                }
-            }
-        } else {
-            $product->stock()->create([
-                'qtd_min' => $request->stock_min ?? 0,
-                'qtd_atual' => $request->stock_current ?? 0,
-            ]);
-        }
+        $data = ProductData::fromRequest($request);
+        $this->productService->create($data);
 
         return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto criado com sucesso!');
     }
 
     /**
      * @param Product $product
-     * @return Application|Factory|View
+     * @return View
      */
-    public function show(Product $product)
+    public function show(Product $product): View
     {
         $product->load('variants');
-
         return view('products.show', compact('product'));
     }
 
     /**
      * @param Product $product
-     * @return Application|Factory|View
+     * @return View
      */
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         $product->load('variants');
-
-        return view('products.edit', compact('product'));
+        return view(self::PRODUCTS_EDIT, compact('product'));
     }
 
-    /***
+    /**
      * @param Request $request
      * @param Product $product
      * @return RedirectResponse
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product): RedirectResponse
     {
-        $validated = $request->validate([
-            'sku' => 'required',
-            'name' => 'required',
-            'description' => 'nullable',
-            'price_of' => 'required|numeric',
-            'price_for' => 'required|numeric',
-            'status' => 'required|boolean',
-            'image' => 'nullable|image',
-        ]);
+        $data = ProductData::fromRequest($request);
+        $this->productService->update($product, $data);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('products', 'public');
-        }
-
-        $product->update($validated);
-        $product->variants()->delete();
-
-        if ($request->has('variants')) {
-            foreach ($request->variants as $variant) {
-                $v = new PrdVariant($variant);
-                $v->id_product = $product->id;
-                $v->save();
-
-                if (isset($variant['stock_min']) || isset($variant['stock_current'])) {
-                    $product->stock()->create([
-                        'variant_id' => $v->id,
-                        'qtd_min' => $variant['stock_min'] ?? 0,
-                        'qtd_atual' => $variant['stock_current'] ?? 0,
-                    ]);
-                }
-            }
-        }
-
-        return redirect()->route('products.index')->with('success', 'Produto atualizado com sucesso!');
+        return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto atualizado com sucesso!');
     }
 
     /**
@@ -169,6 +108,6 @@ class ProductController extends Controller
         $product->stock()->delete();
         $product->delete();
 
-        return redirect()->route('products.index')->with('success', 'Produto deletado com sucesso!');
+        return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto deletado com sucesso!');
     }
 }

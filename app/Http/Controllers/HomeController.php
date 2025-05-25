@@ -1,7 +1,18 @@
 <?php
+/**
+ * GB Developer
+ *
+ * @category GB_Developer
+ * @package  GB
+ *
+ * @copyright Copyright (c) 2025 GB Developer.
+ *
+ * @author Geovan Brambilla <geovangb@gmail.com>
+ */
 
 namespace App\Http\Controllers;
 
+use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -19,7 +30,7 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * @return Renderable
      */
     public function index()
     {

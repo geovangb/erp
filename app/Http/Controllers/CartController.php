@@ -19,42 +19,34 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Services\CartService;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use App\Models\Coupon;
 
 class CartController extends Controller
 {
-    /****
+    protected $cartService;
+
+    /**
+     * @param CartService $cartService
+     */
+    public function __construct(CartService $cartService)
+    {
+        $this->cartService = $cartService;
+    }
+
+    /**
      * @return Application|Factory|View
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function index()
+    public function index(): Factory|View|Application
     {
-        $cart = session()->get('cart', []);
-        $subtotal = 0;
-
-        foreach ($cart as $item) {
-            $subtotal += $item['quantity'] * $item['price'];
-        }
-
-        if ($subtotal > 200) {
-            $frete = 0;
-        } else {
-            $uf = session('frete_uf');
-
-            switch ($uf) {
-                case 'SP':
-                    $frete = 10.00;
-                    break;
-                case 'RJ':
-                    $frete = 12.00;
-                    break;
-                default:
-                    $frete = 20.00;
-            }
-        }
-
+        $cart = $this->cartService->getCart();
+        $subtotal = $this->cartService->calculateSubtotal($cart);
+        $uf = session('frete_uf');
+        $frete = $this->cartService->calculateFreight($uf, $subtotal);
         $total = $subtotal + $frete;
 
         return view('cart.index', compact('cart', 'subtotal', 'frete', 'total'));
@@ -70,21 +62,8 @@ class CartController extends Controller
     public function add(Request $request, Product $product): RedirectResponse
     {
         $variantId = $request->input('variant_id');
-        $key = $product->id . '_' . $variantId;
-
-        $cart = session()->get('cart', []);
-
-        if (isset($cart[$key])) {
-            $cart[$key]['quantity'] += 1;
-        } else {
-            $cart[$key] = [
-                'product_id' => $product->id,
-                'variant_id' => $variantId,
-                'name' => $product->name,
-                'price' => $product->price_for,
-                'quantity' => 1,
-            ];
-        }
+        $cart = $this->cartService->getCart();
+        $cart = $this->cartService->addProductToCart($cart, $product, $variantId);
 
         session()->put('cart', $cart);
 
@@ -99,7 +78,7 @@ class CartController extends Controller
      */
     public function remove($key): RedirectResponse
     {
-        $cart = session()->get('cart', []);
+        $cart = $this->cartService->getCart();
         unset($cart[$key]);
         session()->put('cart', $cart);
 
@@ -109,9 +88,10 @@ class CartController extends Controller
     /**
      * @return RedirectResponse
      */
-    public function clear()
+    public function clear(): RedirectResponse
     {
         session()->forget('cart');
+
         return redirect()->route('cart.view')->with('success', 'Carrinho esvaziado.');
     }
 
@@ -119,7 +99,7 @@ class CartController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function calculateFreight(Request $request): JsonResponse
+    public function calculateFreight(Request $request)
     {
         $uf = $request->input('uf');
         session(['frete_uf' => $uf]);
@@ -142,31 +122,23 @@ class CartController extends Controller
         return redirect()->route('cart.view')->with('success', 'Método de pagamento atualizado.');
     }
 
-    public function applyCoupon(Request $request)
+    /**
+     * @param Request $request
+     * @return RedirectResponse
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function applyCoupon(Request $request): RedirectResponse
     {
-        $coupon = Coupon::where('code', $request->coupon_code)
-            ->whereDate('valid_until', '>=', now())
-            ->first();
+        $cart = $this->cartService->getCart();
+        $subtotal = $this->cartService->calculateSubtotal($cart);
 
-        $cart = session('cart', []);
-        $subtotal = collect($cart)->sum(fn($item) => $item['quantity'] * $item['price']);
+        $result = $this->cartService->applyCouponToCart($request->coupon_code, $subtotal);
 
-        if (!$coupon) {
-            return redirect()->back()->with('error', 'Cupom inválido ou expirado.');
+        if (isset($result['error'])) {
+            return redirect()->back()->with('error', $result['error']);
         }
 
-        if ($subtotal < $coupon->min_cart_value) {
-            return redirect()->back()->with('error', 'Este cupom exige um valor mínimo de R$ ' . number_format($coupon->min_cart_value, 2, ',', '.'));
-        }
-
-        session([
-            'coupon' => [
-                'code' => $coupon->code,
-                'discount' => $coupon->discount,
-            ]
-        ]);
-
-        return redirect()->back()->with('success', 'Cupom aplicado com sucesso.');
+        return redirect()->back()->with('success', $result['success']);
     }
-
 }

@@ -1,9 +1,9 @@
  body {
-     min-height: 100vh;
+     min-height: 500vh;
      display: flex;
  }
 .sidebar {
-    width: 220px;
+    width: 500px;
     background: #343a40;
     color: white;
 }

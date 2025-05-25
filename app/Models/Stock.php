@@ -14,6 +14,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Stock extends Model
 {
@@ -26,13 +27,19 @@ class Stock extends Model
         'qtd_atual',
     ];
 
-    public function product()
+    /**
+     * @return BelongsTo
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /**
+     * @return BelongsTo
+     */
+    public function variant(): BelongsTo
     {
-        return $this->belongsTo(PrdVariant::class, 'variant_id');
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 }

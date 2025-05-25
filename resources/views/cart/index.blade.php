@@ -82,7 +82,7 @@
                         $total += $subtotal;
                     @endphp
                     <tr>
-                        <td>{{ $item['name'] }}</td>
+                        <td>{{ $item['name'] ?? 'Sem nome' }}</td>
                         <td>{{ $item['variant_id'] ?? '-' }}</td>
                         <td>{{ $item['quantity'] }}</td>
                         <td>R$ {{ number_format($item['price'], 2, ',', '.') }}</td>

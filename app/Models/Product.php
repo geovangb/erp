@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends Model
 {
@@ -38,7 +37,7 @@ class Product extends Model
      */
     public function variants(): HasMany
     {
-        return $this->hasMany(PrdVariant::class, 'id_product');
+        return $this->hasMany(ProductVariant::class, 'id_product');
     }
 
     /**

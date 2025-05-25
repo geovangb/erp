@@ -17,11 +17,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class PrdVariant extends Model
+class ProductVariant extends Model
 {
     use HasFactory;
 
-    protected $table = 'prd_variants';
+    protected $table = 'product_variants';
 
     protected $fillable = [
         'id_product', 'variant', 'name_variant', 'sku', 'stock', 'price', 'price_for', 'status'
