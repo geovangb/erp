@@ -141,4 +141,32 @@ class CartController extends Controller
 
         return redirect()->route('cart.view')->with('success', 'Método de pagamento atualizado.');
     }
+
+    public function applyCoupon(Request $request)
+    {
+        $coupon = Coupon::where('code', $request->coupon_code)
+            ->whereDate('valid_until', '>=', now())
+            ->first();
+
+        $cart = session('cart', []);
+        $subtotal = collect($cart)->sum(fn($item) => $item['quantity'] * $item['price']);
+
+        if (!$coupon) {
+            return redirect()->back()->with('error', 'Cupom inválido ou expirado.');
+        }
+
+        if ($subtotal < $coupon->min_cart_value) {
+            return redirect()->back()->with('error', 'Este cupom exige um valor mínimo de R$ ' . number_format($coupon->min_cart_value, 2, ',', '.'));
+        }
+
+        session([
+            'coupon' => [
+                'code' => $coupon->code,
+                'discount' => $coupon->discount,
+            ]
+        ]);
+
+        return redirect()->back()->with('success', 'Cupom aplicado com sucesso.');
+    }
+
 }

@@ -44,6 +44,25 @@
         </form>
 
         @if (count($cart) > 0)
+            <div class="mb-4">
+                <form action="{{ route('cart.applyCoupon') }}" method="POST" class="mb-3 d-flex gap-2">
+                    @csrf
+                    <input type="text" name="coupon_code" class="form-control w-auto" placeholder="Digite o cupom" required>
+                    <button type="submit" class="btn btn-outline-success">Aplicar Cupom</button>
+                </form>
+
+                @if (session('coupon'))
+                    <div class="alert alert-info">
+                        Cupom <strong>{{ session('coupon')['code'] }}</strong> aplicado -
+                        Desconto de <strong>R$ {{ number_format(session('coupon')['discount'], 2, ',', '.') }}</strong>
+                        <form action="{{ route('cart.removeCoupon') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button class="btn btn-sm btn-link text-danger">Remover</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+
             <table class="table table-bordered">
                 <thead>
                 <tr>
@@ -97,6 +116,12 @@
                     <td colspan="4" class="text-end"><strong>Total:</strong></td>
                     <td colspan="2"><strong>R$ {{ number_format($total_completo, 2, ',', '.') }}</strong></td>
                 </tr>
+                @if (session('coupon'))
+                    <tr>
+                        <td colspan="4" class="text-end">Desconto ({{ session('coupon')['code'] }}):</td>
+                        <td colspan="2">- R$ {{ number_format(session('coupon')['discount'], 2, ',', '.') }}</td>
+                    </tr>
+                @endif
                 </tbody>
             </table>
 
@@ -109,20 +134,54 @@
                 </span>
                 </div>
             @endif
-
-            {{-- Botão Finalizar Pedido --}}
-            <form action="{{ route('checkout.process') }}" method="POST" class="mt-4">
-                @csrf
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="bi bi-check-circle"></i> Finalizar Pedido
-                </button>
-            </form>
+            <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#finalizarPedidoModal">
+                Finalizar Pedido
+            </button>
 
         @else
             <div class="alert alert-info">Seu carrinho está vazio.</div>
         @endif
     </div>
 
+    <!-- Modal -->
+    <div class="modal fade" id="finalizarPedidoModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form action="{{ route('checkout.process') }}" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Dados do Cliente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-2">
+                            <label>Nome</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-2">
+                            <label>E-mail</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="mb-2">
+                            <label>Telefone</label>
+                            <input type="text" name="phone" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label>CEP</label>
+                            <input type="text" name="cep" class="form-control" required>
+                        </div>
+                        <div class="mb-2">
+                            <label>Endereço</label>
+                            <input type="text" name="address" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" type="submit">Confirmar Pedido</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     {{-- Script ViaCEP --}}
     <script>
         function buscarCep() {

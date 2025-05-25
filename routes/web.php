@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
@@ -23,6 +24,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('products', ProductController::class);
+    Route::resource('coupons', CouponController::class);
 });
 
 Auth::routes();
@@ -35,5 +37,14 @@ Route::delete('/cart/{key}', [CartController::class, 'remove'])->name('cart.remo
 Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
 Route::post('/cart/calculate-freight', [CartController::class, 'calculateFreight'])->name('cart.calculateFreight');
 Route::post('/cart/payment-method', [CartController::class, 'setPaymentMethod'])->name('cart.setPaymentMethod');
+Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.applyCoupon');
+Route::post('/cart/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.removeCoupon');
+
 Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+
+Route::get('/orders', array(OrderController::class, 'index'))->name('orders.index');
+Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+
+Route::resource('coupons', App\Http\Controllers\CouponController::class);
 
