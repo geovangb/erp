@@ -14,25 +14,38 @@ namespace App\Services;
 
 use App\DTO\WebhookData;
 use App\Models\Order;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use App\Repositories\OrderRepository;
 
 class WebhookService
 {
+    protected OrderRepository $orderRepository;
+
+    public function __construct(OrderRepository $orderRepository)
+    {
+        $this->orderRepository = $orderRepository;
+    }
+
     public function handle(WebhookData $data): string
     {
-        $order = Order::find($data->order_id);
+        $order = $this->orderRepository->findById($data->order_id);
 
         if (!$order) {
-            throw new \Exception('Pedido não encontrado');
+            throw new Exception(__('messages.order_not_found'));
         }
 
-        if ($data->status === 'cancelado') {
-            $order->delete();
-            return 'Pedido cancelado e removido com sucesso.';
-        }
+        DB::transaction(function () use ($order, $data) {
+            if ($data->status === 'cancelado') {
+                $order->delete();
+            } else {
+                $order->status = $data->status;
+                $order->save();
+            }
+        });
 
-        $order->status = $data->status;
-        $order->save();
-
-        return 'Status do pedido atualizado com sucesso.';
+        return $data->status === 'cancelado'
+            ? __('messages.order_cancelled')
+            : __('messages.order_status_updated');
     }
 }

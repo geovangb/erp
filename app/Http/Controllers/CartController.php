@@ -67,7 +67,7 @@ class CartController extends Controller
 
         session()->put('cart', $cart);
 
-        return redirect()->back()->with('success', 'Produto adicionado ao carrinho.');
+        return redirect()->back()->with('success', __('messages.product_added_to_cart'));
     }
 
     /**
@@ -82,7 +82,7 @@ class CartController extends Controller
         unset($cart[$key]);
         session()->put('cart', $cart);
 
-        return redirect()->route('cart.view')->with('success', 'Item removido do carrinho.');
+        return redirect()->route('cart.view')->with('success',  __('messages.item_removed_from_cart'));
     }
 
     /**
@@ -92,7 +92,7 @@ class CartController extends Controller
     {
         session()->forget('cart');
 
-        return redirect()->route('cart.view')->with('success', 'Carrinho esvaziado.');
+        return redirect()->route('cart.view')->with('success',  __('messages.cart_emptied'));
     }
 
     /**
@@ -119,7 +119,7 @@ class CartController extends Controller
 
         session(['payment_method' => $request->payment_method]);
 
-        return redirect()->route('cart.view')->with('success', 'Método de pagamento atualizado.');
+        return redirect()->route('cart.view')->with('success', __('messages.payment_method_updated'));
     }
 
     /**

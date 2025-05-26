@@ -42,6 +42,7 @@ class WebhookController extends Controller
         try {
             $data = WebhookData::fromRequest($request);
             $message = $this->service->handle($data);
+
             return response()->json(['message' => $message]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);

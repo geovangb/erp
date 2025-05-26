@@ -12,13 +12,19 @@
 
 namespace App\Services;
 
-use App\Models\Coupon;
-use App\Models\Product;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use App\Repositories\CouponRepository;
 
 class CartService
 {
+    /**
+     * @param CouponRepository $couponRepository
+     */
+    public function __construct(
+        protected CouponRepository $couponRepository
+    ) {}
+
     /**
      * @return mixed
      * @throws ContainerExceptionInterface
@@ -95,9 +101,7 @@ class CartService
      */
     public function applyCouponToCart(string $couponCode, float $subtotal): array
     {
-        $coupon = Coupon::where('code', $couponCode)
-            ->whereDate('valid_until', '>=', now())
-            ->first();
+        $coupon = $this->couponRepository->findValidCoupon($couponCode);
 
         if (!$coupon) {
             return ['error' => 'Cupom inválido ou expirado.'];

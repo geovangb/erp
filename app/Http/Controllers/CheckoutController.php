@@ -53,6 +53,6 @@ class CheckoutController extends Controller
             return redirect()->route('cart.view')->with('error', $e->getMessage());
         }
 
-        return redirect()->route('cart.view')->with('success', 'Pedido finalizado com sucesso!');
+        return redirect()->route('cart.view')->with('success', __('messages.order_completed'));
     }
 }

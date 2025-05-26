@@ -5,20 +5,32 @@ namespace Tests\Unit;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Services\CartService;
+use App\Repositories\CouponRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
+use Mockery;
 
 class CartServiceTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $cartService;
+    protected $couponRepository;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->cartService = new CartService();
+
+        // Mock do repositório de cupons
+        $this->couponRepository = Mockery::mock(CouponRepository::class);
+        $this->cartService = new CartService($this->couponRepository);
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     public function test_calculate_subtotal()
@@ -76,6 +88,11 @@ class CartServiceTest extends TestCase
 
     public function test_apply_coupon_invalid()
     {
+        $this->couponRepository
+            ->shouldReceive('findValidByCode')
+            ->with('INVALID')
+            ->andReturn(null);
+
         $result = $this->cartService->applyCouponToCart('INVALID', 100);
 
         $this->assertArrayHasKey('error', $result);
@@ -84,12 +101,17 @@ class CartServiceTest extends TestCase
 
     public function test_apply_coupon_below_minimum_cart_value()
     {
-        $coupon = Coupon::factory()->create([
+        $coupon = new Coupon([
             'code' => 'DESCONTO10',
             'discount' => 10,
             'min_cart_value' => 200,
             'valid_until' => now()->addDay()
         ]);
+
+        $this->couponRepository
+            ->shouldReceive('findValidByCode')
+            ->with('DESCONTO10')
+            ->andReturn($coupon);
 
         $result = $this->cartService->applyCouponToCart('DESCONTO10', 100);
 
@@ -99,12 +121,17 @@ class CartServiceTest extends TestCase
 
     public function test_apply_coupon_successfully()
     {
-        $coupon = Coupon::factory()->create([
+        $coupon = new Coupon([
             'code' => 'DESCONTO20',
             'discount' => 20,
             'min_cart_value' => 100,
             'valid_until' => now()->addDay()
         ]);
+
+        $this->couponRepository
+            ->shouldReceive('findValidByCode')
+            ->with('DESCONTO20')
+            ->andReturn($coupon);
 
         $result = $this->cartService->applyCouponToCart('DESCONTO20', 150);
 

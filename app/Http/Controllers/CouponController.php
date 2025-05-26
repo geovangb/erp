@@ -20,6 +20,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Coupon;
+use App\Repositories\CouponRepository;
 
 class CouponController extends Controller
 {
@@ -28,8 +29,10 @@ class CouponController extends Controller
     /**
      * @param CouponService $couponService
      */
-    public function __construct(CouponService $couponService)
-    {
+    public function __construct(
+        CouponService $couponService,
+        protected CouponRepository $couponRepository
+    ) {
         $this->couponService = $couponService;
     }
 
@@ -38,7 +41,8 @@ class CouponController extends Controller
      */
     public function index(): Factory|View|Application
     {
-        $coupons = Coupon::orderBy('valid_until', 'desc')->get();
+        $coupons = $this->couponRepository->getAllOrderedByValidity();
+
         return view('coupons.index', compact('coupons'));
     }
 

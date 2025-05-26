@@ -18,6 +18,7 @@ use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Repositories\ProductRepository;
 
 
 class ProductController extends Controller
@@ -27,13 +28,19 @@ class ProductController extends Controller
     const PRODUCTS_EDIT = 'products.edit';
 
     protected ProductService $productService;
+    protected ProductRepository $productRepository;
 
     /**
      * @param ProductService $productService
+     * @param ProductRepository $productRepository
      */
-    public function __construct(ProductService $productService)
+    public function __construct(
+        ProductService $productService,
+        ProductRepository $productRepository
+    )
     {
         $this->productService = $productService;
+        $this->productRepository = $productRepository;
     }
 
     /**
@@ -41,7 +48,8 @@ class ProductController extends Controller
      */
     public function index(): View
     {
-        $products = Product::with('variants')->paginate(10);
+        $products = $this->productRepository->paginateWithVariants();
+
         return view(self::PRODUCTS_INDEX, compact('products'));
     }
 
@@ -62,7 +70,7 @@ class ProductController extends Controller
         $data = ProductData::fromRequest($request);
         $this->productService->create($data);
 
-        return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto criado com sucesso!');
+        return redirect()->route(self::PRODUCTS_INDEX)->with('success', __('messages.product_created'));
     }
 
     /**
@@ -95,7 +103,7 @@ class ProductController extends Controller
         $data = ProductData::fromRequest($request);
         $this->productService->update($product, $data);
 
-        return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto atualizado com sucesso!');
+        return redirect()->route(self::PRODUCTS_INDEX)->with('success', __('messages.product_updated'));
     }
 
     /**
@@ -108,6 +116,6 @@ class ProductController extends Controller
         $product->stock()->delete();
         $product->delete();
 
-        return redirect()->route(self::PRODUCTS_INDEX)->with('success', 'Produto deletado com sucesso!');
+        return redirect()->route(self::PRODUCTS_INDEX)->with('success', __('messages.product_deleted'));
     }
 }
