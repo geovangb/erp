@@ -24,6 +24,10 @@ use App\Mail\OrderConfirmationMail;
 
 class CheckoutService
 {
+
+    public function __construct(protected OrderConfirmationMail $orderConfirmationMail)
+    {
+    }
     /**
      * @param CheckoutData $checkoutData
      * @param array $cart
